@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Traffic Signal Optimization</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>Smart Traffic Signal Optimization</h1>
+      </div>
+      <div class="status-pill" id="topPriority">Priority: Not calculated</div>
+    </header>
+
+    <section class="workspace">
+      <aside class="control-panel" aria-label="Vehicle count controls">
+        <div class="panel-heading">
+          <h2>Vehicle Count Input</h2>
+          <p>Roads are graph edges. Vehicle counts are edge weights.</p>
+        </div>
+
+        <form id="trafficForm" class="input-grid">
+          <label>
+            <span>North Road</span>
+            <input id="northRoad" type="number" min="0" max="500" value="45" required>
+          </label>
+          <label>
+            <span>East Road</span>
+            <input id="eastRoad" type="number" min="0" max="500" value="28" required>
+          </label>
+          <label>
+            <span>South Road</span>
+            <input id="southRoad" type="number" min="0" max="500" value="60" required>
+          </label>
+          <label>
+            <span>West Road</span>
+            <input id="westRoad" type="number" min="0" max="500" value="18" required>
+          </label>
+
+          <div class="button-row">
+            <button type="submit" class="primary-btn">Start Optimization</button>
+            <button type="button" id="sampleBtn">Sample Data</button>
+            <button type="button" id="clearBtn">Clear</button>
+          </div>
+        </form>
+
+        <div class="result-box" aria-live="polite">
+          <h2>Real-time Result</h2>
+          <p id="optimizedOrder">Optimized order: Not calculated</p>
+          <p id="waitingReduction">Waiting time reduced: 0 seconds</p>
+          <p id="errorMessage" class="error-message"></p>
+        </div>
+
+        <div class="algorithm-box">
+          <h2>Greedy Strategy</h2>
+          <ol>
+            <li>Select the road with maximum traffic first.</li>
+            <li>Allocate highest green time to the busiest road.</li>
+            <li>Continue iteratively for remaining roads.</li>
+          </ol>
+          <p>Time Complexity: O(n log n)</p>
+          <button type="button" id="codeToggleBtn" class="code-toggle-btn">Show Kruskal C Code</button>
+        </div>
+      </aside>
+
+      <section class="simulation-panel" aria-label="Traffic simulation and results">
+        <div class="intersection-board">
+          <div class="road vertical"></div>
+          <div class="road horizontal"></div>
+          <div class="junction">INTERSECTION</div>
+
+          <div class="road-node north" data-road="North Road">
+            <span class="road-title">North Road</span>
+            <span class="road-count" id="northCount">45 vehicles</span>
+            <span class="signal" id="northSignal"></span>
+          </div>
+
+          <div class="road-node east" data-road="East Road">
+            <span class="road-title">East Road</span>
+            <span class="road-count" id="eastCount">28 vehicles</span>
+            <span class="signal" id="eastSignal"></span>
+          </div>
+
+          <div class="road-node south" data-road="South Road">
+            <span class="road-title">South Road</span>
+            <span class="road-count" id="southCount">60 vehicles</span>
+            <span class="signal" id="southSignal"></span>
+          </div>
+
+          <div class="road-node west" data-road="West Road">
+            <span class="road-title">West Road</span>
+            <span class="road-count" id="westCount">18 vehicles</span>
+            <span class="signal" id="westSignal"></span>
+          </div>
+        </div>
+
+        <div class="priority-strip" id="priorityStrip">
+          <div class="priority-card empty">Run optimization to view priority order.</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Road</th>
+                <th>Vehicles</th>
+                <th>Green Time</th>
+                <th>Wait Before</th>
+                <th>Wait After</th>
+              </tr>
+            </thead>
+            <tbody id="resultTable">
+              <tr>
+                <td colspan="6">No optimized signal allocation yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <section id="sourceCodePanel" class="source-code-panel" hidden>
+          <h2>Kruskal MST C Program</h2>
+          <pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct Edge
+{
+    int src, dest, weight;
+};
+
+int findParent(int parent[], int node)
+{
+    if (parent[node] == node)
+        return node;
+
+    return findParent(parent, parent[node]);
+}
+
+void unionSet(int parent[], int u, int v)
+{
+    int uParent = findParent(parent, u);
+    int vParent = findParent(parent, v);
+
+    parent[uParent] = vParent;
+}
+
+void sortEdges(struct Edge edge[], int edges)
+{
+    int i, j;
+    struct Edge temp;
+
+    for (i = 0; i &lt; edges - 1; i++)
+    {
+        for (j = 0; j &lt; edges - i - 1; j++)
+        {
+            if (edge[j].weight &gt; edge[j + 1].weight)
+            {
+                temp = edge[j];
+                edge[j] = edge[j + 1];
+                edge[j + 1] = temp;
+            }
+        }
+    }
+}
+
+int main()
+{
+    int vertices, edges;
+
+    printf("Enter number of vertices: ");
+    scanf("%d", &amp;vertices);
+
+    printf("Enter number of edges: ");
+    scanf("%d", &amp;edges);
+
+    struct Edge edge[edges];
+
+    int i;
+
+    printf("Enter source destination weight:\n");
+
+    for (i = 0; i &lt; edges; i++)
+    {
+        scanf("%d %d %d", &amp;edge[i].src, &amp;edge[i].dest, &amp;edge[i].weight);
+    }
+
+    sortEdges(edge, edges);
+
+    int parent[vertices];
+
+    for (i = 0; i &lt; vertices; i++)
+    {
+        parent[i] = i;
+    }
+
+    int minCost = 0;
+    int count = 0;
+
+    printf("\nEdges in Minimum Spanning Tree:\n");
+
+    for (i = 0; i &lt; edges &amp;&amp; count &lt; vertices - 1; i++)
+    {
+        int u = edge[i].src;
+        int v = edge[i].dest;
+        int w = edge[i].weight;
+
+        if (findParent(parent, u) != findParent(parent, v))
+        {
+            printf("%d - %d = %d\n", u, v, w);
+
+            minCost += w;
+
+            unionSet(parent, u, v);
+
+            count++;
+        }
+    }
+
+    printf("\nMinimum Cost = %d\n", minCost);
+
+    return 0;
+}</code></pre>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
